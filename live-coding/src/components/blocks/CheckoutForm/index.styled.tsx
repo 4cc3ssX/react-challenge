@@ -65,6 +65,13 @@ export const FieldLabel = styled.span`
     }}
 `
 
+export const InputContainer = styled.div`
+    flex-direction: row,
+    justify-content: center;
+    align-items: center;
+    position: relative;
+`
+
 export const Input = styled.input`
     ${normalTransitions()}
     ${resetInput()}
@@ -85,6 +92,17 @@ export const Input = styled.input`
     }
 `
 
+export const IconContainer = styled.div`
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-width: 28px;
+    height: 16px;
+    border-radius: 3px;
+    background-color: #252525;
+`
+
 export const ErrorMessage = styled.div`
     color: var(--error);
     font-weight: 500;
@@ -95,6 +113,18 @@ export const ErrorMessage = styled.div`
 export const Actions = styled.article`
     display: flex;
     justify-content: center;
+`
+
+export const PayButton = styled.button`
+    width: 137px;
+    height: 40px;
+    background-color: #DCA16B;
+    font-size: 14px;
+    font-weight: 500;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 4px;
+    box-shadow: 0px 3px 20px rgba(0, 0, 0, 0.1);
 `
 
 export const Fields = styled.article.attrs(() => ({ className: "fields" }))``
