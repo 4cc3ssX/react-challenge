@@ -12,6 +12,10 @@ import {
     validateCardNumber,
     formatCardNumber,
     formatCardExpiry,
+    validateCardExpiry,
+    validateCardCVC,
+    parseCardType,
+    parseCardExpiry,
 } from "creditcardutils"
 
 // Styled Elements
@@ -26,11 +30,18 @@ import {
     Form,
     FieldGroups,
     FieldsMerge,
+    InputContainer,
+    PayButton,
 } from "./index.styled"
+
+// Import InputIcons component and its icons
+import { ReactComponent as CVVLogo } from "../../svgs/cvv-logo.svg"
+import { InputIcons } from "./components"
 
 type TypeCheckoutFormDefaultValues = {
     email: string | null
     card_number: string | null
+    card_type: string | null
     card_expire: string | null
     cvv: string | null
 }
@@ -46,6 +57,7 @@ export interface CheckoutFormProps {
 const defaultState: TypeCheckoutFormDefaultValues = {
     email: null,
     card_number: null,
+    card_type: null,
     card_expire: null,
     cvv: null,
 }
@@ -88,15 +100,43 @@ const CheckoutForm: FC<CheckoutFormProps> = ({
                     "string.cardNumber": "Must be a valid card",
                     "any.required": "Required",
                 }),
-            card_expire: Joi.string().required().messages({
-                "string.empty": "Required",
-                "any.required": "Required",
-            }),
-            cvv: Joi.string().length(3).required().messages({
-                "string.empty": "Required",
-                "string.length": "Maximum 3 digits",
-                "any.required": "Required",
-            }),
+            card_expire: Joi.string()
+                .custom((value, helpers) => {
+                    if (value) {
+                        const { month, year } = parseCardExpiry(
+                            models.card_expire
+                        )
+                        if (!validateCardExpiry(month, year)) {
+                            return helpers.error("string.expiry")
+                        }
+                    }
+
+                    return value
+                })
+                .required()
+                .messages({
+                    "string.empty": "Required",
+                    "string.expiry": "Must be a valid expiry",
+                    "any.required": "Required",
+                }),
+            cvv: Joi.string()
+                .length(3)
+                .custom((value, helpers) => {
+                    if (value) {
+                        if (!validateCardCVC(value, models.card_type)) {
+                            return helpers.error("string.cvv")
+                        }
+                    }
+
+                    return value
+                })
+                .required()
+                .messages({
+                    "string.empty": "Required",
+                    "string.cvv": "Must be a valid CVV",
+                    "string.length": "Maximum 3 digits",
+                    "any.required": "Required",
+                }),
         }),
     })
 
@@ -118,7 +158,8 @@ const CheckoutForm: FC<CheckoutFormProps> = ({
     const formatter = {
         cardNumber: (e: ChangeEvent<HTMLInputElement>) => {
             const value = formatCardNumber(e.target.value)
-
+            const cardType = parseCardType(value)
+            updateModel("card_type", cardType)
             updateModel("card_number", value)
         },
         cardExpire: (e: ChangeEvent<HTMLInputElement>) => {
@@ -162,14 +203,17 @@ const CheckoutForm: FC<CheckoutFormProps> = ({
                                 Card information
                             </FieldLabel>
 
-                            <Input
-                                {...register.input({
-                                    name: "card_number",
-                                    onChange: formatter.cardNumber,
-                                })}
-                                type="text"
-                                placeholder="1234 1234 1234 1234"
-                            />
+                            <InputContainer>
+                                <Input
+                                    {...register.input({
+                                        name: "card_number",
+                                        onChange: formatter.cardNumber,
+                                    })}
+                                    type="text"
+                                    placeholder="1234 1234 1234 1234"
+                                />
+                                <InputIcons activeIconName={models.card_type} />
+                            </InputContainer>
                         </FieldControl>
 
                         {getErrors("card_number") && (
@@ -198,12 +242,22 @@ const CheckoutForm: FC<CheckoutFormProps> = ({
                         </Fields>
 
                         <Fields>
-                            <Input
-                                {...register.input({ name: "cvv" })}
-                                type="text"
-                                placeholder="123"
-                            />
-
+                            <InputContainer>
+                                <Input
+                                    {...register.input({ name: "cvv" })}
+                                    type="text"
+                                    placeholder="123"
+                                />
+                                <InputIcons
+                                    items={[
+                                        {
+                                            Logo: CVVLogo,
+                                            name: "cvv",
+                                            backgroundColor: "transparent",
+                                        },
+                                    ]}
+                                />
+                            </InputContainer>
                             {getErrors("cvv") && (
                                 <ErrorMessage>{getErrors("cvv")}</ErrorMessage>
                             )}
@@ -212,9 +266,9 @@ const CheckoutForm: FC<CheckoutFormProps> = ({
                 </FieldGroups>
 
                 <Actions>
-                    <button disabled={state.$auto_invalid || loading}>
+                    <PayButton type="submit" disabled={state.$auto_invalid || loading}>
                         {submitText}
-                    </button>
+                    </PayButton>
                 </Actions>
             </Form>
         </Container>
